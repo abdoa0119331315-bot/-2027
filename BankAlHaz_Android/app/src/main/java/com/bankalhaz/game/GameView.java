@@ -14,7 +14,7 @@ public class GameView extends View {
  private final int[] groups={0,1,0,1,1,0,2,2,0,3,3,0,3,0,4,4,4,0,5,5,0,5,0,6,6,0,6,0,7,0,7,7,0,8,8,0,8,0,8,0};
  private final int[] palette={0,0xff8c5a46,0xffbd4b4b,0xffffa23b,0xffd1bd37,0xff56a9d7,0xff456fc1,0xff4c9d59,0xff9562b7};
  private static class Player{String name;int money=300,pos=0,jail=0,color;boolean ai,out=false;ArrayList<Integer>owned=new ArrayList<>();Player(String n,int c,boolean a){name=n;color=c;ai=a;}}
- private final ArrayList<Player> players=new ArrayList<>();private final Random random=new Random(); private final ToneGenerator tones=new ToneGenerator(AudioManager.STREAM_MUSIC,75); private String chatLine=\"\uD83D\uDC4B أهلاً بالجميع!\"; private RectF chatRect=new RectF(),emojiRect=new RectF();
+ private final ArrayList<Player> players=new ArrayList<>();private final Random random=new Random(); private final ToneGenerator tones=new ToneGenerator(AudioManager.STREAM_MUSIC,75); private String chatLine="\uD83D\uDC4B أهلاً بالجميع!"; private RectF chatRect=new RectF(),emojiRect=new RectF();
  private int turn=0,d1=1,d2=1,pending=-1;private boolean rolled=false,canBuy=false,gameOver=false;
  private String message="مرحباً بك في بنك الحظ! تحتاج إلى 6 للخروج من البداية.";
  private RectF board=new RectF(),rollRect=new RectF(),buyRect=new RectF(),endRect=new RectF();private float tile;
