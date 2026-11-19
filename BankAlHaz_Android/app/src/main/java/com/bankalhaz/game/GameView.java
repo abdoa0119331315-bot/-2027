@@ -5,6 +5,7 @@ import android.graphics.*;
 import android.view.*;
 import android.media.AudioManager;
 import android.media.ToneGenerator;
+import android.content.SharedPreferences;
 import java.util.*;
 
 public class GameView extends View {
@@ -14,12 +15,12 @@ public class GameView extends View {
  private final int[] groups={0,1,0,1,1,0,2,2,0,3,3,0,3,0,4,4,4,0,5,5,0,5,0,6,6,0,6,0,7,0,7,7,0,8,8,0,8,0,8,0};
  private final int[] palette={0,0xff8c5a46,0xffbd4b4b,0xffffa23b,0xffd1bd37,0xff56a9d7,0xff456fc1,0xff4c9d59,0xff9562b7};
  private static class Player{String name;int money=300,pos=0,jail=0,color;boolean ai,out=false;ArrayList<Integer>owned=new ArrayList<>();Player(String n,int c,boolean a){name=n;color=c;ai=a;}}
- private final ArrayList<Player> players=new ArrayList<>();private final Random random=new Random(); private final ToneGenerator tones=new ToneGenerator(AudioManager.STREAM_MUSIC,75); private String chatLine="\uD83D\uDC4B أهلاً بالجميع!"; private RectF chatRect=new RectF(),emojiRect=new RectF();
+ private final ArrayList<Player> players=new ArrayList<>();private final Random random=new Random();private final SharedPreferences prefs; private final ToneGenerator tones=new ToneGenerator(AudioManager.STREAM_MUSIC,75); private String chatLine="\uD83D\uDC4B أهلاً بالجميع!"; private RectF chatRect=new RectF(),emojiRect=new RectF();
  private int turn=0,d1=1,d2=1,pending=-1;private boolean rolled=false,canBuy=false,gameOver=false;
  private String message="مرحباً بك في بنك الحظ! تحتاج إلى 6 للخروج من البداية.";
  private RectF board=new RectF(),rollRect=new RectF(),buyRect=new RectF(),endRect=new RectF(),centerRect=new RectF();private float tile;
- public GameView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);reset();}
- private void reset(){players.clear();players.add(new Player("أنت",0xff16a9ec,false));players.add(new Player("الأحمر",0xffed4545,true));players.add(new Player("الأخضر",0xff25c65a,true));players.add(new Player("الذهبي",0xffffcf35,true));turn=0;rolled=canBuy=gameOver=false;pending=-1;message="ابدأ برمي النرد. تحتاج إلى رقم 6 للخروج.";invalidate();}
+ public GameView(Context c){super(c);setLayerType(View.LAYER_TYPE_SOFTWARE,null);prefs=c.getSharedPreferences("bank_alhaz_save",Context.MODE_PRIVATE);reset();loadState();}
+ private void reset(){players.clear();players.add(new Player("أنت",0xff16a9ec,false));players.add(new Player("الأحمر",0xffed4545,true));players.add(new Player("الأخضر",0xff25c65a,true));players.add(new Player("الذهبي",0xffffcf35,true));turn=0;rolled=canBuy=gameOver=false;pending=-1;message="ابدأ برمي النرد. تحتاج إلى رقم 6 للخروج.";saveState();invalidate();}
  private void txt(Canvas c,String s,float x,float y,float size,int color,Paint.Align a){p.setColor(color);p.setTextSize(size);p.setTypeface(Typeface.create("sans-serif",Typeface.BOLD));p.setTextAlign(a);c.drawText(s,x,y,p);}
  private void box(Canvas c,RectF r,int color,float rad){p.setColor(color);c.drawRoundRect(r,rad,rad,p);}
  @Override protected void onDraw(Canvas c){float w=getWidth(),h=getHeight();p.setShader(new LinearGradient(0,0,w,h,0xff164b38,0xff061b18,Shader.TileMode.CLAMP));c.drawRect(0,0,w,h,p);p.setShader(null);float side=Math.min(h-26,w*.69f);side=Math.max(260,side);float left=14,top=(h-side)/2;board.set(left,top,left+side,top+side);tile=side/11f;drawBoard(c);drawPanel(c,left+side+22,top,w-left-side-36,h-top*2);}
@@ -43,11 +44,11 @@ public class GameView extends View {
  private String dice(int n){return new String[]{"","⚀","⚁","⚂","⚃","⚄","⚅"}[n];}
  private void button(Canvas c,RectF r,String s,boolean enabled){box(c,r,enabled?0xffffd36b:0xff716c5d,8);txt(c,s,r.centerX(),r.centerY()+5,13,enabled?0xff34220d:0xffd2c9b7,Paint.Align.CENTER);}
  @Override public boolean onTouchEvent(android.view.MotionEvent e){if(e.getAction()!=MotionEvent.ACTION_UP)return true;float x=e.getX(),y=e.getY();if(rollRect.contains(x,y)&&!rolled&&!players.get(turn).ai)roll();else if(buyRect.contains(x,y)&&canBuy&&!players.get(turn).ai)buy();else if(endRect.contains(x,y)&&rolled&&!players.get(turn).ai)nextTurn();else if(chatRect.contains(x,y))openChat();else if(emojiRect.contains(x,y))sendEmoji();else if(centerRect.contains(x,y))openGameMenu();else {for(int i=0;i<40;i++)if(tileRect(i).contains(x,y)){showCityCard(i);break;}}return true;}
- private void roll(){tones.startTone(ToneGenerator.TONE_PROP_BEEP,180);postDelayed(()->tones.startTone(ToneGenerator.TONE_PROP_ACK,160),220);d1=1+random.nextInt(6);d2=1+random.nextInt(6);int sum=d1+d2;Player a=players.get(turn);rolled=true;canBuy=false;if(a.jail>0){if(d1==d2||a.jail==1){a.jail=0;message=a.name+" خرج من السجن.";}else{a.jail--;message="أنت في السجن، انتظر دوراً آخر.";invalidate();return;}}else if(a.pos==0&&sum!=6){message="تحتاج إلى رمية مجموعها 6 للخروج من البداية.";invalidate();return;}int old=a.pos;a.pos=(a.pos+sum)%40;if(old+sum>=40){a.money+=100;message="مررت بالبداية وحصلت على 100 جنيه.";}else message="تحركت "+sum+" خطوات.";resolve(a);invalidate();}
+ private void roll(){tones.startTone(ToneGenerator.TONE_PROP_BEEP,180);postDelayed(()->tones.startTone(ToneGenerator.TONE_PROP_ACK,160),220);d1=1+random.nextInt(6);d2=1+random.nextInt(6);int sum=d1+d2;Player a=players.get(turn);rolled=true;canBuy=false;if(a.jail>0){if(d1==d2||a.jail==1){a.jail=0;message=a.name+" خرج من السجن.";}else{a.jail--;message="أنت في السجن، انتظر دوراً آخر.";invalidate();return;}}else if(a.pos==0&&sum!=6){message="تحتاج إلى رمية مجموعها 6 للخروج من البداية.";invalidate();return;}int old=a.pos;a.pos=(a.pos+sum)%40;if(old+sum>=40){a.money+=100;message="مررت بالبداية وحصلت على 100 جنيه.";}else message="تحركت "+sum+" خطوات.";resolve(a);saveState();invalidate();}
  private void resolve(Player a){int i=a.pos;if(i==10){a.jail=2;message="ذهبت إلى السجن!";return;}if(i==5||i==17||i==35){a.money-=50;message="دفعت ضريبة 50 جنيه.";return;}if(i==2||i==11||i==20||i==27||i==37){int[] d={80,-50,40,-30,100};int v=d[random.nextInt(d.length)];a.money+=v;message=v>=0?"بطاقة حظ: ربحت "+v+" جنيه.":"بطاقة حظ: خسرت "+(-v)+" جنيه.";return;}if(prices[i]>0){int own=owner(i);if(own<0){if(a.money>=prices[i]){pending=i;canBuy=true;message="العقار "+names[i]+" للبيع بسعر "+prices[i]+" جنيه.";}else message="رصيدك لا يكفي لشراء العقار.";}else if(own!=turn){int rent=Math.max(10,prices[i]/3);a.money-=rent;players.get(own).money+=rent;message="دفعت إيجاراً قدره "+rent+" جنيه.";}}if(a.money<0){a.out=true;a.money=0;message=a.name+" أفلس وخرج من اللعبة.";}int active=0,last=-1;for(int j=0;j<4;j++)if(!players.get(j).out){active++;last=j;}if(active==1){gameOver=true;message="انتهت اللعبة! الفائز: "+players.get(last).name;}}
  private int owner(int i){for(int j=0;j<4;j++)if(players.get(j).owned.contains(i))return j;return -1;}
- private void buy(){tones.startTone(ToneGenerator.TONE_PROP_ACK,220);Player a=players.get(turn);if(pending<0)return;int i=pending;a.money-=prices[i];a.owned.add(i);message="أصبحت "+names[i]+" ملكك!";pending=-1;canBuy=false;invalidate();}
- private void nextTurn(){tones.startTone(ToneGenerator.TONE_PROP_BEEP2,120);pending=-1;canBuy=false;rolled=false;int guard=0;do{turn=(turn+1)%4;}while(players.get(turn).out&&guard++<4);invalidate();if(players.get(turn).ai)postDelayed(this::aiTurn,700);}
+ private void buy(){tones.startTone(ToneGenerator.TONE_PROP_ACK,220);Player a=players.get(turn);if(pending<0)return;int i=pending;a.money-=prices[i];a.owned.add(i);message="أصبحت "+names[i]+" ملكك!";pending=-1;canBuy=false;saveState();invalidate();}
+ private void nextTurn(){tones.startTone(ToneGenerator.TONE_PROP_BEEP2,120);pending=-1;canBuy=false;rolled=false;int guard=0;do{turn=(turn+1)%4;}while(players.get(turn).out&&guard++<4);saveState();invalidate();if(players.get(turn).ai)postDelayed(this::aiTurn,700);}
  private void openChat(){ final String[] lines={"حظاً موفقاً! 🍀","هذه المدينة لي! 🏦","يا لها من رمية! 🎲","سأفوز بالجولة! 👑","انتبه من المحكمة! ⚖️","مرحباً يا أصدقاء! 👋"}; new android.app.AlertDialog.Builder(getContext()).setTitle("دردشة اللاعبين").setItems(lines,(d,w)->{chatLine=players.get(turn).name+": "+lines[w];message=chatLine;tones.startTone(ToneGenerator.TONE_PROP_BEEP,100);invalidate();}).setNegativeButton("إغلاق",null).show(); }
  private void sendEmoji(){ final String[] emojis={"😀","😂","😍","😎","😡","🎉","🍀","👑","🎲","👏"}; new android.app.AlertDialog.Builder(getContext()).setTitle("اختر رمزاً تعبيرياً").setItems(emojis,(d,w)->{chatLine=players.get(turn).name+": "+emojis[w];message=chatLine;invalidate();}).show(); }
 
@@ -62,9 +63,9 @@ public class GameView extends View {
   new android.app.AlertDialog.Builder(getContext()).setTitle("🏙️ بطاقة "+names[i]).setMessage(body).setPositiveButton("حسناً",null).show();
  }
  private void openGameMenu(){
-  final String[] items={"👤 الملف الشخصي","🏆 لوحة الصدارة","👥 الأصدقاء","🏠 إنشاء غرفة","📊 ممتلكاتي"};
+  final String[] items={"👤 الملف الشخصي","🏆 لوحة الصدارة","👥 الأصدقاء","🏠 إنشاء غرفة","📊 ممتلكاتي","🔄 لعبة جديدة"};
   new android.app.AlertDialog.Builder(getContext()).setTitle("قائمة بنك الحظ").setItems(items,(d,w)->{
-   if(w==0)showProfile();else if(w==1)showLeaderboard();else if(w==2)showFriends();else if(w==3)createRoom();else showProperties();
+   if(w==0)showProfile();else if(w==1)showLeaderboard();else if(w==2)showFriends();else if(w==3)createRoom();else if(w==4)showProperties();else new android.app.AlertDialog.Builder(getContext()).setTitle("بدء لعبة جديدة").setMessage("سيتم تصفير نتائج اللعبة الحالية.").setNegativeButton("إلغاء",null).setPositiveButton("ابدأ",(x,z)->{prefs.edit().clear().apply();reset();}).show();
   }).show();
  }
  private void showProfile(){
@@ -90,5 +91,15 @@ public class GameView extends View {
  private void createRoom(){
   new android.app.AlertDialog.Builder(getContext()).setTitle("🏠 إنشاء غرفة").setMessage("واجهة الغرف قيد التجهيز. إنشاء غرف حقيقية ودعوة أصدقاء عبر الإنترنت يتطلب ربط Firebase وقاعدة بيانات آمنة.").setPositiveButton("حسناً",null).show();
  }
- private void aiTurn(){if(gameOver)return;Player a=players.get(turn);d1=1+random.nextInt(6);d2=1+random.nextInt(6);int sum=d1+d2;rolled=true;if(a.pos==0&&sum!=6){message=a.name+" لم يحصل على 6.";invalidate();postDelayed(this::nextTurn,650);return;}int old=a.pos;a.pos=(a.pos+sum)%40;if(old+sum>=40)a.money+=100;resolve(a);if(pending>=0&&a.money-prices[pending]>=80){int i=pending;a.money-=prices[i];a.owned.add(i);message=a.name+" اشترى "+names[i]+".";}pending=-1;canBuy=false;invalidate();postDelayed(this::nextTurn,850);}
+
+ private void saveState(){
+  SharedPreferences.Editor e=prefs.edit();e.putInt("turn",turn).putBoolean("gameOver",gameOver);
+  for(int j=0;j<players.size();j++){Player a=players.get(j);StringBuilder owned=new StringBuilder();for(int k:a.owned){if(owned.length()>0)owned.append(",");owned.append(k);}e.putInt("money"+j,a.money).putInt("pos"+j,a.pos).putInt("jail"+j,a.jail).putBoolean("out"+j,a.out).putString("owned"+j,owned.toString());}e.apply();
+ }
+ private void loadState(){
+  if(!prefs.contains("money0"))return;turn=Math.max(0,Math.min(3,prefs.getInt("turn",0)));gameOver=prefs.getBoolean("gameOver",false);
+  for(int j=0;j<players.size();j++){Player a=players.get(j);a.money=prefs.getInt("money"+j,300);a.pos=prefs.getInt("pos"+j,0);a.jail=prefs.getInt("jail"+j,0);a.out=prefs.getBoolean("out"+j,false);a.owned.clear();String saved=prefs.getString("owned"+j,"");if(!saved.isEmpty())for(String part:saved.split(",")){try{int city=Integer.parseInt(part);if(city>=0&&city<40&&prices[city]>0)a.owned.add(city);}catch(NumberFormatException ignored){}}}
+  rolled=false;canBuy=false;pending=-1;message="تم استرجاع آخر لعبة محفوظة. ارْمِ النرد لمتابعة اللعب.";
+ }
+ private void aiTurn(){if(gameOver)return;Player a=players.get(turn);d1=1+random.nextInt(6);d2=1+random.nextInt(6);int sum=d1+d2;rolled=true;if(a.pos==0&&sum!=6){message=a.name+" لم يحصل على 6.";invalidate();postDelayed(this::nextTurn,650);return;}int old=a.pos;a.pos=(a.pos+sum)%40;if(old+sum>=40)a.money+=100;resolve(a);if(pending>=0&&a.money-prices[pending]>=80){int i=pending;a.money-=prices[i];a.owned.add(i);message=a.name+" اشترى "+names[i]+".";}pending=-1;canBuy=false;saveState();invalidate();postDelayed(this::nextTurn,850);}
 }
