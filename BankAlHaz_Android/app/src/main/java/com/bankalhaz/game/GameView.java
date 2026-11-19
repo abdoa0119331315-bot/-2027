@@ -25,13 +25,22 @@ public class GameView extends View {
  private void box(Canvas c,RectF r,int color,float rad){p.setColor(color);c.drawRoundRect(r,rad,rad,p);}
  @Override protected void onDraw(Canvas c){float w=getWidth(),h=getHeight();p.setShader(new LinearGradient(0,0,w,h,0xff164b38,0xff061b18,Shader.TileMode.CLAMP));c.drawRect(0,0,w,h,p);p.setShader(null);float side=Math.min(h-26,w*.69f);side=Math.max(260,side);float left=14,top=(h-side)/2;board.set(left,top,left+side,top+side);tile=side/11f;drawBoard(c);drawPanel(c,left+side+22,top,w-left-side-36,h-top*2);}
  private RectF tileRect(int i){int x,y;if(i<=10){x=10-i;y=10;}else if(i<=20){x=0;y=10-(i-10);}else if(i<=30){x=i-20;y=0;}else{x=10;y=i-30;}float s=tile;return new RectF(board.left+x*s,board.top+y*s,board.left+(x+1)*s,board.top+(y+1)*s);}
- private void drawBoard(Canvas c){box(c,new RectF(board.left-5,board.top-5,board.right+5,board.bottom+5),0xffffd66c,14);box(c,board,0xfff4e8cb,8);
+ private void drawBoard(Canvas c){
+  // Premium high-resolution board frame: layered gold bevel and warm ivory playing surface.
+  p.setShadowLayer(18,0,7,0x99000000);box(c,new RectF(board.left-7,board.top-7,board.right+7,board.bottom+7),0xff6b421b,18);p.clearShadowLayer();
+  box(c,new RectF(board.left-5,board.top-5,board.right+5,board.bottom+5),0xffffd66c,14);
+  p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(2.2f);p.setColor(0xff9b6827);c.drawRoundRect(new RectF(board.left-2,board.top-2,board.right+2,board.bottom+2),10,10,p);p.setStyle(Paint.Style.FILL);
+  box(c,board,0xfff4e8cb,8);
   for(int i=0;i<40;i++){RectF r=tileRect(i);p.setColor(0xff2a2118);p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(1);c.drawRect(r,p);p.setStyle(Paint.Style.FILL);p.setColor((i%10==0)?0xffffd36b:(groups[i]>0?palette[groups[i]]:0xfff8f0df));c.drawRect(r.left+1,r.top+1,r.right-1,r.bottom-1,p);
    c.save();float angle=i>=11&&i<=19?90:i>=21&&i<=29?180:i>=31?-90:0;c.rotate(angle,r.centerX(),r.centerY());txt(c,names[i],r.centerX(),r.centerY()+3,Math.max(7,tile*.16f),0xff211b14,Paint.Align.CENTER);if(prices[i]>0)txt(c,prices[i]+" ج",r.centerX(),r.centerY()+tile*.22f,Math.max(6,tile*.12f),0xff211b14,Paint.Align.CENTER);c.restore();
    for(int j=0;j<4;j++){Player a=players.get(j);if(a.pos==i){p.setColor(a.color);c.drawCircle(r.centerX()+(j-1.5f)*tile*.13f,r.centerY()+tile*.32f,tile*.075f,p);}}
    for(Player a:players)if(a.owned.contains(i)){p.setColor(a.color);c.drawRect(r.left+2,r.top+2,r.right-2,r.top+5,p);}
   }
-  centerRect.set(board.left+tile*2.1f,board.top+tile*2.1f,board.right-tile*2.1f,board.bottom-tile*2.1f);RectF center=centerRect;box(c,center,0xff124333,12);txt(c,"بنك الحظ",center.centerX(),center.centerY()-tile*.3f,tile*.68f,0xffffd66c,Paint.Align.CENTER);txt(c,"لعبة العائلة والأصدقاء",center.centerX(),center.centerY()+tile*.08f,tile*.25f,0xffffffff,Paint.Align.CENTER);txt(c,"اشترِ المدن واجمع الإيجارات",center.centerX(),center.centerY()+tile*.48f,tile*.2f,0xffe5d7ae,Paint.Align.CENTER);txt(c,"اضغط هنا للقائمة والإحصائيات",center.centerX(),center.centerY()+tile*.85f,Math.max(7,tile*.15f),0xffffd66c,Paint.Align.CENTER);
+  centerRect.set(board.left+tile*2.1f,board.top+tile*2.1f,board.right-tile*2.1f,board.bottom-tile*2.1f);RectF center=centerRect;
+  p.setShader(new LinearGradient(center.left,center.top,center.right,center.bottom,0xff205b43,0xff08271f,Shader.TileMode.CLAMP));c.drawRoundRect(center,14,14,p);p.setShader(null);
+  p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(2);p.setColor(0xffd7a94d);c.drawRoundRect(new RectF(center.left+5,center.top+5,center.right-5,center.bottom-5),10,10,p);p.setStyle(Paint.Style.FILL);
+  txt(c,"♛",center.centerX(),center.centerY()-tile*.72f,tile*.55f,0xffffd66c,Paint.Align.CENTER);
+  txt(c,"بنك الحظ",center.centerX(),center.centerY()-tile*.3f,tile*.68f,0xffffd66c,Paint.Align.CENTER);txt(c,"لعبة العائلة والأصدقاء",center.centerX(),center.centerY()+tile*.08f,tile*.25f,0xffffffff,Paint.Align.CENTER);txt(c,"اشترِ المدن واجمع الإيجارات",center.centerX(),center.centerY()+tile*.48f,tile*.2f,0xffe5d7ae,Paint.Align.CENTER);txt(c,"اضغط هنا للقائمة والإحصائيات",center.centerX(),center.centerY()+tile*.85f,Math.max(7,tile*.15f),0xffffd66c,Paint.Align.CENTER);
  }
  private void drawPanel(Canvas c,float x,float y,float w,float h){box(c,new RectF(x,y,x+w,y+h),0xff12392f,16);txt(c,"بنك الحظ",x+w/2,y+26,22,0xffffd66c,Paint.Align.CENTER);float yy=y+54;
   for(int i=0;i<4;i++){Player a=players.get(i);box(c,new RectF(x+7,yy-16,x+w-7,yy+16),i==turn?0xff285b46:0xff1b473a,7);p.setColor(a.color);c.drawCircle(x+19,yy,6,p);txt(c,a.name,x+31,yy+4,12,0xffffffff,Paint.Align.LEFT);txt(c,a.money+" ج",x+w-14,yy+4,12,0xffffdf91,Paint.Align.RIGHT);yy+=38;}
@@ -101,5 +110,7 @@ public class GameView extends View {
   for(int j=0;j<players.size();j++){Player a=players.get(j);a.money=prefs.getInt("money"+j,300);a.pos=prefs.getInt("pos"+j,0);a.jail=prefs.getInt("jail"+j,0);a.out=prefs.getBoolean("out"+j,false);a.owned.clear();String saved=prefs.getString("owned"+j,"");if(!saved.isEmpty())for(String part:saved.split(",")){try{int city=Integer.parseInt(part);if(city>=0&&city<40&&prices[city]>0)a.owned.add(city);}catch(NumberFormatException ignored){}}}
   rolled=false;canBuy=false;pending=-1;message="تم استرجاع آخر لعبة محفوظة. ارْمِ النرد لمتابعة اللعب.";
  }
- private void aiTurn(){if(gameOver)return;Player a=players.get(turn);d1=1+random.nextInt(6);d2=1+random.nextInt(6);int sum=d1+d2;rolled=true;if(a.pos==0&&sum!=6){message=a.name+" لم يحصل على 6.";invalidate();postDelayed(this::nextTurn,650);return;}int old=a.pos;a.pos=(a.pos+sum)%40;if(old+sum>=40)a.money+=100;resolve(a);if(pending>=0&&a.money-prices[pending]>=80){int i=pending;a.money-=prices[i];a.owned.add(i);message=a.name+" اشترى "+names[i]+".";}pending=-1;canBuy=false;saveState();invalidate();postDelayed(this::nextTurn,850);}
+ private void aiTurn(){if(gameOver)return;Player a=players.get(turn);d1=1+random.nextInt(6);d2=1+random.nextInt(6);int sum=d1+d2;rolled=true;
+  if(a.jail>0){if(d1==d2||a.jail==1){a.jail=0;message=a.name+" خرج من السجن.";}else{a.jail--;message=a.name+" ما زال في السجن.";saveState();invalidate();postDelayed(this::nextTurn,650);return;}}
+  if(a.pos==0&&sum!=6){message=a.name+" لم يحصل على 6.";invalidate();postDelayed(this::nextTurn,650);return;}int old=a.pos;a.pos=(a.pos+sum)%40;if(old+sum>=40)a.money+=100;resolve(a);if(pending>=0&&a.money-prices[pending]>=80){int i=pending;a.money-=prices[i];a.owned.add(i);message=a.name+" اشترى "+names[i]+".";}pending=-1;canBuy=false;saveState();invalidate();postDelayed(this::nextTurn,850);}
 }
