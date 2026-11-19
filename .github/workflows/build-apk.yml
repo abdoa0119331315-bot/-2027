@@ -1,4 +1,3 @@
-
 name: Build Bank AlHaz APK
 
 on:
@@ -13,13 +12,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Get project files
+      - name: Checkout source
         uses: actions/checkout@v4
-
-      - name: Unpack Android project
-        run: |
-          unzip -o BankAlHaz_Android_Project_v3.zip -d .
-          test -f BankAlHaz_Android/app/build.gradle
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -40,9 +34,14 @@ jobs:
         with:
           gradle-version: '8.9'
 
-      - name: Build debug APK
+      - name: Validate project
+        run: |
+          test -f BankAlHaz_Android/app/src/main/assets/index.html
+          test -f BankAlHaz_Android/app/src/main/java/com/bankalhaz/game/MainActivity.java
+
+      - name: Build release-ready debug APK
         working-directory: BankAlHaz_Android
-        run: gradle --no-daemon assembleDebug
+        run: gradle --no-daemon clean assembleDebug
 
       - name: Save APK for download
         uses: actions/upload-artifact@v4
@@ -50,4 +49,4 @@ jobs:
           name: BankAlHaz-debug-APK
           path: BankAlHaz_Android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 30
