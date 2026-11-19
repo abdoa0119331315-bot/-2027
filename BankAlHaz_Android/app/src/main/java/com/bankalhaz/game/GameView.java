@@ -2,7 +2,9 @@ package com.bankalhaz.game;
 
 import android.content.Context;
 import android.graphics.*;
-import android.view.*;\nimport android.media.AudioManager;\nimport android.media.ToneGenerator;
+import android.view.*;
+import android.media.AudioManager;
+import android.media.ToneGenerator;
 import java.util.*;
 
 public class GameView extends View {
@@ -35,7 +37,8 @@ public class GameView extends View {
   txt(c,"النرد",x+w/2,yy+12,14,0xffffd66c,Paint.Align.CENTER);txt(c,dice(d1)+"   "+dice(d2),x+w/2,yy+51,34,0xffffffff,Paint.Align.CENTER);yy+=76;
   p.setColor(0xfff6e9ce);p.setTextSize(11);p.setTextAlign(Paint.Align.CENTER);String msg=message.length()>65?message.substring(0,63)+"…":message;c.drawText(msg,x+w/2,yy+5,p);yy+=28;
   float bh=Math.min(35,(h-yy-12)/3);if(bh<24)bh=24;rollRect.set(x+9,yy,x+w-9,yy+bh);buyRect.set(x+9,yy+bh+6,x+w-9,yy+bh*2+6);endRect.set(x+9,yy+bh*2+12,x+w-9,yy+bh*3+12);
-  button(c,rollRect,"🎲 رمي النرد",!rolled&&!gameOver&&!players.get(turn).ai);button(c,buyRect,"شراء العقار",canBuy&&!gameOver&&!players.get(turn).ai);button(c,endRect,"إنهاء الدور",rolled&&!gameOver&&!players.get(turn).ai);\n  float chatY=endRect.bottom+8; chatRect.set(x+9,chatY,x+w*.68f,chatY+29); emojiRect.set(x+w*.70f,chatY,x+w-9,chatY+29); button(c,chatRect,"💬 دردشة",true); button(c,emojiRect,"😀 رموز",true);
+  button(c,rollRect,"🎲 رمي النرد",!rolled&&!gameOver&&!players.get(turn).ai);button(c,buyRect,"شراء العقار",canBuy&&!gameOver&&!players.get(turn).ai);button(c,endRect,"إنهاء الدور",rolled&&!gameOver&&!players.get(turn).ai);
+  float chatY=endRect.bottom+8; chatRect.set(x+9,chatY,x+w*.68f,chatY+29); emojiRect.set(x+w*.70f,chatY,x+w-9,chatY+29); button(c,chatRect,"💬 دردشة",true); button(c,emojiRect,"😀 رموز",true);
  }
  private String dice(int n){return new String[]{"","⚀","⚁","⚂","⚃","⚄","⚅"}[n];}
  private void button(Canvas c,RectF r,String s,boolean enabled){box(c,r,enabled?0xffffd36b:0xff716c5d,8);txt(c,s,r.centerX(),r.centerY()+5,13,enabled?0xff34220d:0xffd2c9b7,Paint.Align.CENTER);}
@@ -45,5 +48,7 @@ public class GameView extends View {
  private int owner(int i){for(int j=0;j<4;j++)if(players.get(j).owned.contains(i))return j;return -1;}
  private void buy(){tones.startTone(ToneGenerator.TONE_PROP_ACK,220);Player a=players.get(turn);if(pending<0)return;int i=pending;a.money-=prices[i];a.owned.add(i);message="أصبحت "+names[i]+" ملكك!";pending=-1;canBuy=false;invalidate();}
  private void nextTurn(){tones.startTone(ToneGenerator.TONE_PROP_BEEP2,120);pending=-1;canBuy=false;rolled=false;int guard=0;do{turn=(turn+1)%4;}while(players.get(turn).out&&guard++<4);invalidate();if(players.get(turn).ai)postDelayed(this::aiTurn,700);}
- private void openChat(){ final String[] lines={"حظاً موفقاً! 🍀","هذه المدينة لي! 🏦","يا لها من رمية! 🎲","سأفوز بالجولة! 👑","انتبه من المحكمة! ⚖️","مرحباً يا أصدقاء! 👋"}; new android.app.AlertDialog.Builder(getContext()).setTitle("دردشة اللاعبين").setItems(lines,(d,w)->{chatLine=players.get(turn).name+": "+lines[w];message=chatLine;tones.startTone(ToneGenerator.TONE_PROP_BEEP,100);invalidate();}).setNegativeButton("إغلاق",null).show(); }\n private void sendEmoji(){ final String[] emojis={"😀","😂","😍","😎","😡","🎉","🍀","👑","🎲","👏"}; new android.app.AlertDialog.Builder(getContext()).setTitle("اختر رمزاً تعبيرياً").setItems(emojis,(d,w)->{chatLine=players.get(turn).name+": "+emojis[w];message=chatLine;invalidate();}).show(); }\n private void aiTurn(){if(gameOver)return;Player a=players.get(turn);d1=1+random.nextInt(6);d2=1+random.nextInt(6);int sum=d1+d2;rolled=true;if(a.pos==0&&sum!=6){message=a.name+" لم يحصل على 6.";invalidate();postDelayed(this::nextTurn,650);return;}int old=a.pos;a.pos=(a.pos+sum)%40;if(old+sum>=40)a.money+=100;resolve(a);if(pending>=0&&a.money-prices[pending]>=80){int i=pending;a.money-=prices[i];a.owned.add(i);message=a.name+" اشترى "+names[i]+".";}pending=-1;canBuy=false;invalidate();postDelayed(this::nextTurn,850);}
+ private void openChat(){ final String[] lines={"حظاً موفقاً! 🍀","هذه المدينة لي! 🏦","يا لها من رمية! 🎲","سأفوز بالجولة! 👑","انتبه من المحكمة! ⚖️","مرحباً يا أصدقاء! 👋"}; new android.app.AlertDialog.Builder(getContext()).setTitle("دردشة اللاعبين").setItems(lines,(d,w)->{chatLine=players.get(turn).name+": "+lines[w];message=chatLine;tones.startTone(ToneGenerator.TONE_PROP_BEEP,100);invalidate();}).setNegativeButton("إغلاق",null).show(); }
+ private void sendEmoji(){ final String[] emojis={"😀","😂","😍","😎","😡","🎉","🍀","👑","🎲","👏"}; new android.app.AlertDialog.Builder(getContext()).setTitle("اختر رمزاً تعبيرياً").setItems(emojis,(d,w)->{chatLine=players.get(turn).name+": "+emojis[w];message=chatLine;invalidate();}).show(); }
+ private void aiTurn(){if(gameOver)return;Player a=players.get(turn);d1=1+random.nextInt(6);d2=1+random.nextInt(6);int sum=d1+d2;rolled=true;if(a.pos==0&&sum!=6){message=a.name+" لم يحصل على 6.";invalidate();postDelayed(this::nextTurn,650);return;}int old=a.pos;a.pos=(a.pos+sum)%40;if(old+sum>=40)a.money+=100;resolve(a);if(pending>=0&&a.money-prices[pending]>=80){int i=pending;a.money-=prices[i];a.owned.add(i);message=a.name+" اشترى "+names[i]+".";}pending=-1;canBuy=false;invalidate();postDelayed(this::nextTurn,850);}
 }
